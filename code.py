@@ -40,13 +40,13 @@ try:
     from lightgbm import LGBMRegressor
     HAS_LGBM = True
 except (ImportError, OSError, Exception) as e:
-    logging.warning(f"LightGBM 加载失败 (环境兼容性问题): {e}")
+    logging.warning(f"LightGBM failed to load (environment compatibility issue): {e}")
     HAS_LGBM = False
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # ==========================================
-# SOTA 模型定义
+# SOTA Model Definitions
 # ==========================================
 
 class PositionalEncoding(nn.Module):
@@ -95,7 +95,7 @@ class TCNModel(nn.Module):
         return self.fc(y[:, :, -1])
 
 class MambaLite(nn.Module):
-    """一个简化的类 Mamba 递归结构，通过线性扫描模拟状态转换"""
+    """A simplified Mamba-like recurrent structure that simulates state transitions via linear scan"""
     def __init__(self, input_dim, d_state=16, d_model=64):
         super().__init__()
         self.input_fc = nn.Linear(input_dim, d_model)
@@ -110,10 +110,10 @@ class MambaLite(nn.Module):
         batch, seq_len, _ = x.shape
         x = self.input_fc(x) # (batch, seq_len, d_model)
 
-        # 简化版线性扫描：模拟 RNN/SSM 对序列的处理
-        # 此处简化为全局加权池化，但在真实 Mamba 中是递归累加
+        # Simplified linear scan: simulates RNN/SSM sequence processing
+        # Simplified here as global weighted pooling, but in real Mamba it is recursive accumulation
         dt = torch.sigmoid(self.dt_proj(x)) # (batch, seq_len, 1)
-        # 模拟状态演化：简单的加权聚合
+        # Simulated state evolution: simple weighted aggregation
         context = torch.sum(x * dt, dim=1) / (torch.sum(dt, dim=1) + 1e-6)
         return self.out_fc(context)
 
@@ -128,7 +128,7 @@ class SeqWrapper(nn.Module):
         return self.fc(out[:, -1, :])
 
 # ==========================================
-# Benchmark 主类
+# Benchmark Main Class
 # ==========================================
 
 class ComprehensiveFCCBenchmark:
@@ -141,7 +141,7 @@ class ComprehensiveFCCBenchmark:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def create_sequences(self, X, y):
-        """创建滑动窗口序列"""
+        """Create sliding-window sequences"""
         Xs, ys = [], []
         for i in range(len(X) - self.window_size):
             Xs.append(X[i:(i + self.window_size)])
@@ -150,12 +150,12 @@ class ComprehensiveFCCBenchmark:
 
     def load_and_preprocess(self):
         logging.info("="*70)
-        logging.info(f"正在加载并预处理数据 (Window Size: {self.window_size})...")
+        logging.info(f"Loading and preprocessing data (Window Size: {self.window_size})...")
         df = pd.read_csv(self.data_path)
         if df.columns[0] in ['Unnamed: 0', '']:
             df = df.iloc[:, 1:]
 
-        # 匿名化
+        # Anonymization
         df.columns = ['Target'] + [f'Feature_{i:02d}' for i in range(1, len(df.columns))]
         df = df.interpolate(method='linear').ffill().bfill()
 
@@ -165,7 +165,7 @@ class ComprehensiveFCCBenchmark:
         X_scaled = self.scaler_x.fit_transform(X_raw)
         y_scaled = self.scaler_y.fit_transform(y_raw)
 
-        # 创建序列
+        # Create sequences
         X_seq, y_seq = self.create_sequences(X_scaled, y_scaled)
 
         n = len(X_seq)
@@ -179,24 +179,24 @@ class ComprehensiveFCCBenchmark:
         self.y_val = y_seq[train_end:val_end]
         self.y_test = y_seq[val_end:]
 
-        logging.info(f"生成的序列总量: {n}")
-        logging.info(f"训练集: {len(self.X_train)} | 验证集: {len(self.X_val)} | 测试集: {len(self.X_test)}")
-        logging.info(f"输入形状: {self.X_train.shape} | 目标形状: {self.y_train.shape}")
+        logging.info(f"Total sequences generated: {n}")
+        logging.info(f"Train: {len(self.X_train)} | Val: {len(self.X_val)} | Test: {len(self.X_test)}")
+        logging.info(f"Input shape: {self.X_train.shape} | Target shape: {self.y_train.shape}")
         logging.info("="*70)
 
     def calculate_metrics(self, y_true_sc, y_pred_sc, y_train_true_sc, y_train_pred_sc, name):
-        """同时计算训练集和测试集指标（归一化）"""
-        # 测试集
+        """Compute metrics on both training and test sets (normalized)"""
+        # Test set
         test_rmse = np.sqrt(mean_squared_error(y_true_sc, y_pred_sc))
         test_mae = mean_absolute_error(y_true_sc, y_pred_sc)
         test_r2 = r2_score(y_true_sc, y_pred_sc)
 
-        # 训练集
+        # Training set
         train_rmse = np.sqrt(mean_squared_error(y_train_true_sc, y_train_pred_sc))
         train_mae = mean_absolute_error(y_train_true_sc, y_train_pred_sc)
         train_r2 = r2_score(y_train_true_sc, y_train_pred_sc)
 
-        # MAPE (反归一化计算)
+        # MAPE (computed on inverse-normalized values)
         y_test_orig = self.scaler_y.inverse_transform(y_true_sc.reshape(-1, 1)).flatten()
         y_pred_orig = self.scaler_y.inverse_transform(y_pred_sc.reshape(-1, 1)).flatten()
 
@@ -215,7 +215,7 @@ class ComprehensiveFCCBenchmark:
         return result
 
     def get_all_sklearn_models(self):
-        """返回所有 sklearn 模型（expanded + SOTA）"""
+        """Return all sklearn models (expanded + SOTA)"""
         return [
             # Linear (14)
             ('OLS', LinearRegression()),
@@ -260,9 +260,9 @@ class ComprehensiveFCCBenchmark:
 
     def run_sklearn_benchmarks(self):
         models = self.get_all_sklearn_models()
-        logging.info(f"\n开始运行 {len(models)} 个 Sklearn/传统 模型 (使用展平序列)...")
+        logging.info(f"\nStarting {len(models)} Sklearn/traditional models (using flattened sequences)...")
 
-        # 展平 3D 序列为 2D 矩阵以适配 sklearn
+        # Flatten 3D sequences into a 2D matrix for sklearn compatibility
         X_train_flat = self.X_train.reshape(len(self.X_train), -1)
         X_test_flat = self.X_test.reshape(len(self.X_test), -1)
 
@@ -271,9 +271,9 @@ class ComprehensiveFCCBenchmark:
                 start = time.time()
                 using_full_data = True
 
-                # 对计算密集型模型下采样
+                # Downsample for compute-intensive models
                 if name in ['TheilSen', 'SVR-RBF', 'KernelRidge'] and len(X_train_flat) > 15000:
-                    logging.info(f"  {name} 计算复杂度高，下采样至 15000 条数据进行训练...")
+                    logging.info(f"  {name} has high compute complexity; downsampling to 15000 rows for training...")
                     idx = np.random.choice(len(X_train_flat), 15000, replace=False)
                     model.fit(X_train_flat[idx], self.y_train[idx].ravel())
                     using_full_data = False
@@ -288,23 +288,23 @@ class ComprehensiveFCCBenchmark:
                 self.calculate_metrics(self.y_test.ravel(), y_test_pred, y_train_true, y_train_pred, name)
 
                 data_status = "Full Data" if using_full_data else "Sampled"
-                logging.info(f"  [{data_status}] 耗时: {time.time()-start:.1f}s")
+                logging.info(f"  [{data_status}] Elapsed: {time.time()-start:.1f}s")
             except Exception as e:
-                logging.error(f"{name} 失败: {e}")
+                logging.error(f"{name} failed: {e}")
 
     def run_pytorch_benchmarks(self, epochs=50):
-        """运行所有 PyTorch 深度学习模型，支持时序序列"""
-        # X 形状为 (batch, seq_len, features)
+        """Run all PyTorch deep-learning models with time-series sequence support"""
+        # X shape: (batch, seq_len, features)
         in_dim = self.X_train.shape[2]
-        hid = 64  # 统一隐藏层维度
+        hid = 64  # Unified hidden dimension
 
         models = [
-            # DNN variants (对 DNN 展平输入)
+            # DNN variants (flatten input for DNN)
             ("DNN-Small", nn.Sequential(nn.Flatten(), nn.Linear(in_dim * self.window_size, hid), nn.ReLU(), nn.Linear(hid, 1))),
             ("DNN-Medium", nn.Sequential(nn.Flatten(), nn.Linear(in_dim * self.window_size, hid), nn.ReLU(), nn.Linear(hid, hid), nn.ReLU(), nn.Linear(hid, 1))),
             ("DNN-Large", nn.Sequential(nn.Flatten(), nn.Linear(in_dim * self.window_size, hid*2), nn.ReLU(), nn.Linear(hid*2, hid), nn.ReLU(), nn.Linear(hid, 1))),
 
-            # 时序模型 (原生处理 3D 序列)
+            # Sequential models (native 3D sequence handling)
             ("Transformer", TransformerRegressor(in_dim, d_model=hid)),
             ("TCN", TCNModel(in_dim, num_channels=[hid, hid])),
             ("Mamba-Lite", MambaLite(in_dim, d_model=hid)),
@@ -312,7 +312,7 @@ class ComprehensiveFCCBenchmark:
             ("GRU", SeqWrapper(nn.GRU(in_dim, hid, batch_first=True), hid))
         ]
 
-        logging.info(f"\n开始运行 {len(models)} 个深度学习模型 (Epochs={epochs})...")
+        logging.info(f"\nStarting {len(models)} deep-learning models (Epochs={epochs})...")
         for name, model in models:
             self._train_pytorch(name, model, epochs)
 
@@ -322,7 +322,7 @@ class ComprehensiveFCCBenchmark:
             model = model.to(self.device)
             optimizer = optim.Adam(model.parameters(), lr=0.001)
             criterion = nn.MSELoss()
-            # 增加 batch_size 以加快训练速度
+            # Increase batch_size for faster training
             loader = DataLoader(TensorDataset(torch.FloatTensor(self.X_train), torch.FloatTensor(self.y_train)),
                               batch_size=512, shuffle=True)
 
@@ -343,42 +343,42 @@ class ComprehensiveFCCBenchmark:
             self.calculate_metrics(self.y_test.ravel(), y_test_pred.ravel(),
                                  self.y_train.ravel(), y_train_pred.ravel(), name)
 
-            # 保存强时序模型 (Transformer) 的预测结果用于绘图
+            # Save predictions of the strong sequential model (Transformer) for plotting
             if name == "Transformer":
-                # 保存测试集
+                # Save test set
                 test_pred_df = pd.DataFrame({
                     'Actual': self.y_test.ravel(),
                     'Predicted': y_test_pred.ravel()
                 })
                 test_pred_df.to_csv('best_predictions_test.csv', index=False)
 
-                # 保存训练集
+                # Save training set
                 train_pred_df = pd.DataFrame({
                     'Actual': self.y_train.ravel(),
                     'Predicted': y_train_pred.ravel()
                 })
                 train_pred_df.to_csv('best_predictions_train.csv', index=False)
-                logging.info(f"  已导出 {name} (Time-Series) 训练/测试 预测数据用于绘图")
+                logging.info(f"  Exported {name} (Time-Series) train/test predictions for plotting")
 
-            logging.info(f"  耗时: {time.time()-start:.1f}s")
+            logging.info(f"  Elapsed: {time.time()-start:.1f}s")
         except Exception as e:
-            logging.error(f"{name} 失败: {e}")
+            logging.error(f"{name} failed: {e}")
 
     def report(self):
         df = pd.DataFrame(self.results).sort_values(by='Test_R2', ascending=False)
 
         print("\n" + "="*100)
-        print("FCC Co-processing 综合基准测试最终报告 (ALL MODELS)")
+        print("FCC Co-processing Comprehensive Benchmark Final Report (ALL MODELS)")
         print("="*100)
-        print(f"总测试模型数: {len(df)}")
-        print(f"数据规模: Train={len(self.X_train)}, Test={len(self.X_test)}")
+        print(f"Total models tested: {len(df)}")
+        print(f"Dataset size: Train={len(self.X_train)}, Test={len(self.X_test)}")
         print("="*100)
-        # 格式化输出，保留4位小数
+        # Formatted output, 4 decimal places
         print(df.round(4).to_string(index=False))
         print("="*100)
 
         df.to_csv('benchmark_comprehensive_final.csv', index=False)
-        logging.info("\n最终结果已保存至: benchmark_comprehensive_final.csv")
+        logging.info("\nFinal results saved to: benchmark_comprehensive_final.csv")
 
 if __name__ == "__main__":
     DATA_PATH = '/content/drive/MyDrive/green LCC new final smoothed.csv'
@@ -389,4 +389,4 @@ if __name__ == "__main__":
         bm.run_pytorch_benchmarks(epochs=50)  # 8 DL models
         bm.report()
     else:
-        logging.error(f"数据文件不存在: {DATA_PATH}")
+        logging.error(f"Data file not found: {DATA_PATH}")
