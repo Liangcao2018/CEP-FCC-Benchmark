@@ -1,0 +1,3 @@
+estimator,R2,RMSE_pct_of_mean,MAE_pct_of_mean,mean_error_pct_of_mean
+Two-stage: Transformer LCC soft sensor + Eq. (8),0.9859985355515973,8.244168240714478,5.437230189713175,4.363520846935805
+Constant fraction (6.14% from training period) x measured LCC,0.01124882020243434,69.2793209603835,62.82645186204964,13.65618847860501

@@ -1,0 +1,17 @@
+Variable,Physical_quantity,Recording_unit,Released_scale,Mean,Std
+Target,Total LCC production,bbl/day,masked,128.39999999999998,21.0
+Feature_01,Fossil feed flow,bbl/day,masked,110.40000000000008,22.0
+Feature_02,Bio-feed flow,bbl/day,masked,440.00000000000006,41.89999999999999
+Feature_03,Outlet flow 1,kbbl/day,masked,295.49999999999994,3.7100000000000004
+Feature_04,Outlet flow 2,kbbl/day,masked,201.99999999999991,37.4
+Feature_05,Catalyst cooler fluffing air,kSCF/h,masked,264.5,23.800000000000004
+Feature_06,Catalyst circulation rate,short ton/min,masked,354.7,5.750000000000001
+Feature_07,Flue gas excess oxygen,vol%,masked,201.2,16.7
+Feature_08,CO concentration signal,ppm,masked,187.5,3.3799999999999994
+Feature_09,Riser temperature,degF,masked,301.1999999999998,8.8
+Feature_10,Preheat temperature,degF,masked,235.89999999999998,3.05
+Feature_11,Catalyst cooler steam flow,klb/h,masked,131.00000000000003,34.5
+Feature_12,Upper regenerator temperature,degF,masked,306.60000000000053,32.5
+Feature_13,Catalyst to oil ratio,dimensionless,masked,340.0,37.8
+Feature_14,Reactor temperature,degF,masked,309.70000000000016,18.8
+Feature_15,Conversion rate during co-processing,%,masked,391.8999999999999,4.66

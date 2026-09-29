@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import logging
 import os
+import sys
 import time
 import math
 import warnings
@@ -152,7 +153,7 @@ class ComprehensiveFCCBenchmark:
         logging.info("="*70)
         logging.info(f"Loading and preprocessing data (Window Size: {self.window_size})...")
         df = pd.read_csv(self.data_path)
-        if df.columns[0] in ['Unnamed: 0', '']:
+        if df.columns[0] in ['Unnamed: 0', '', 'index']:
             df = df.iloc[:, 1:]
 
         # Anonymization
@@ -381,7 +382,9 @@ class ComprehensiveFCCBenchmark:
         logging.info("\nFinal results saved to: benchmark_comprehensive_final.csv")
 
 if __name__ == "__main__":
-    DATA_PATH = '/content/drive/MyDrive/green LCC new final smoothed.csv'
+    # Un-normalized benchmark series released in data/ on a masked scale; z-scoring is done here
+    # (the path can be given as the first argument)
+    DATA_PATH = sys.argv[1] if len(sys.argv) > 1 else os.path.join('data', 'fcc_masked_data.csv.zip')
     if os.path.exists(DATA_PATH):
         bm = ComprehensiveFCCBenchmark(DATA_PATH)
         bm.load_and_preprocess()
